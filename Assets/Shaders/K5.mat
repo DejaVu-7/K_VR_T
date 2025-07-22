@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: K5_HD
+  m_Name: K5
   m_Shader: {fileID: 4800000, guid: c7c57a3dfd35b924ba1d2cd3cf4eaf06, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0

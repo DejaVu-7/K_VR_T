@@ -108,8 +108,8 @@ Material:
     - _Pattern: 1.12
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Rotation: -0.52
-    - _Segments: 2
+    - _Rotation: -20.45
+    - _Segments: 12.36
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -118,7 +118,7 @@ Material:
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZWrite: 1
-    - _Zoom: 6.9
+    - _Zoom: 9.7
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}

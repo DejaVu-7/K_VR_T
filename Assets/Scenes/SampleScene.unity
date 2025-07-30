@@ -210,7 +210,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 0b70370b10df1b54aac4bd4ffadaf102, type: 2}
     - target: {fileID: 919132149155446097, guid: b6e5a14cbf488da4f92e2afc4f382350, type: 3}
       propertyPath: m_Name
-      value: Sink (1)
+      value: Sink 2
       objectReference: {fileID: 0}
     - target: {fileID: 3583899442873354139, guid: b6e5a14cbf488da4f92e2afc4f382350, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -606,7 +606,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 3814ba7dc5cb294468872ad589280067, type: 3}
       propertyPath: m_Name
-      value: Toilet (1)
+      value: Toilet 2
       objectReference: {fileID: 0}
     - target: {fileID: 1863191399037859163, guid: 3814ba7dc5cb294468872ad589280067, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -731,7 +731,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 8cb801066e048be4388a7eb232d7fd69, type: 3}
       propertyPath: m_Name
-      value: ShowerDoors (1)
+      value: ShowerDoors 2
       objectReference: {fileID: 0}
     - target: {fileID: 7993805913990160779, guid: 8cb801066e048be4388a7eb232d7fd69, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
@@ -3099,7 +3099,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f61efb1850d02fa45a26b3f53c3ebe4e, type: 3}
       propertyPath: m_Name
-      value: Shower (1)
+      value: Shower 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6145,7 +6145,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 0b70370b10df1b54aac4bd4ffadaf102, type: 2}
     - target: {fileID: 919132149155446097, guid: 6c05eeb6c68340c4c9124e7ff99368e4, type: 3}
       propertyPath: m_Name
-      value: GlassRoomDoor
+      value: GlassRoomDoor 3
       objectReference: {fileID: 0}
     - target: {fileID: 1807769072031879333, guid: 6c05eeb6c68340c4c9124e7ff99368e4, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

@@ -80,7 +80,7 @@ MonoBehaviour:
   active: 1
   redOutRedIn:
     m_OverrideState: 1
-    m_Value: 100
+    m_Value: 0
   redOutGreenIn:
     m_OverrideState: 1
     m_Value: 0
@@ -285,8 +285,8 @@ MonoBehaviour:
         serializedVersion: 2
         m_Curve:
         - serializedVersion: 3
-          time: 0.70212764
-          value: 0.58192086
+          time: 0.71542555
+          value: 0
           inSlope: 0
           outSlope: 0
           tangentMode: 0
@@ -687,7 +687,7 @@ MonoBehaviour:
     m_Value: 65472
   tint:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    m_Value: {r: 0, g: 0, b: 0, a: 1}
   highQualityFiltering:
     m_OverrideState: 1
     m_Value: 0

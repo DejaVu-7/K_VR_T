@@ -1,14 +1,15 @@
-ï»¿Shader "Unlit/K9"
+Shader "Unlit/K9"
 {
     Properties
     {
-        _Segments ("Segments", Range(2, 20)) = 6           
-        _Rotation ("Rotation", Float) = 0                  
-        _Zoom ("Zoom", Float) = 1                          
-        _Brightness ("Brightness", Float) = 1              
-        _Glassiness ("Glassiness", Range(0, 5)) = 1        
-        _GlowStrength ("Glow Strength", Range(0, 5)) = 1   
-        _Speed ("Block Movement Speed", Float) = 1         
+        _Segments ("Symmetry Segments", Range(3, 12)) = 6
+        _Rotation ("Rotation", Float) = 0
+        _Zoom ("Zoom", Float) = 1
+        _Speed ("Animation Speed", Float) = 0.2
+        _Brightness ("Brightness", Float) = 1
+        _Softness ("Softness", Range(0.1, 1.0)) = 0.5
+        _BaseColor ("Base Color", Color) = (0.8, 0.9, 0.85, 1)
+        _AccentColor ("Accent Color", Color) = (0.6, 0.75, 0.8, 1)
     }
 
     SubShader
@@ -26,10 +27,11 @@
             float _Segments;
             float _Rotation;
             float _Zoom;
-            float _Brightness;
-            float _Glassiness;
-            float _GlowStrength;
             float _Speed;
+            float _Brightness;
+            float _Softness;
+            float4 _BaseColor;
+            float4 _AccentColor;
 
             struct appdata
             {
@@ -43,54 +45,54 @@
                 float4 vertex : SV_POSITION;
             };
 
-            v2f vert (appdata v)
+            // Función para suavizar el patrón
+            float smoothPulse(float x, float speed, float time)
+            {
+                return 0.5 + 0.5 * sin(x * 6.283185 + time * speed);
+            }
+
+            v2f vert(appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                o.uv = v.uv * 2.0 - 1.0; // centrar UV [-1,1]
                 return o;
             }
 
-            float mirror(float v) {
-                return abs(frac(v * 0.5) * 2.0 - 1.0);
-            }
-
-            fixed4 frag (v2f i) : SV_Target
+            fixed4 frag(v2f i) : SV_Target
             {
-                float t = _Time.y;
+                float time = _Time.y * _Speed;
+                float2 uv = i.uv * _Zoom;
 
-                // UV transformaciones
-                float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
-                uv = float2(mirror(uv.x), mirror(uv.y));
-
+                // Cálculo polar
                 float r = length(uv);
-                float angle = atan2(uv.y, uv.x) + _Rotation;
+                float angle = atan2(uv.y, uv.x) + _Rotation + time * 0.1;
 
-                float segmentAngle = 3.14159265 / _Segments;
-                angle = fmod(angle, 2.0 * segmentAngle);
-                angle = abs(angle - segmentAngle);
+                // Simetría kaleidoscópica
+                float segmentAngle = UNITY_TWO_PI / _Segments;
+                angle = fmod(angle, segmentAngle);
+                angle = abs(angle - segmentAngle * 0.5);
 
-                float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
+                float2 kaleidoUV = float2(cos(angle), sin(angle)) * r;
 
-                // Movimiento animado en diagonal
-                float2 animatedUV = mirroredUV + t * _Speed * float2(0.3, 0.7);
+                // Patrones de ondas suaves
+                float waveX = smoothPulse(kaleidoUV.x * 3.0, 1.0, time);
+                float waveY = smoothPulse(kaleidoUV.y * 3.5, 1.2, time + 1.5);
+                float waveR = smoothPulse(r * 4.0, 0.7, time + 3.0);
 
-                // PatrÃ³n de cubos (tipo checker)
-                float2 blockCoord = floor(animatedUV * 8.0);
-                float checker = fmod(blockCoord.x + blockCoord.y, 2.0);
-                float val = checker;
+                // Combinación muy suave y armónica
+                float combined = (waveX + waveY + waveR) / 3.0;
 
-                // Glow desde el centro
-                float glow = exp(-r * _GlowStrength * 2.0);
-                val = saturate(val + glow * 0.8);
+                // Suavizar bordes para evitar contraste duro
+                combined = smoothstep(_Softness * 0.5, _Softness, combined);
 
-                // Glassiness
-                float gloss = pow(val, _Glassiness * 2.5 + 0.5);
+                // Mezclar colores pastel
+                float3 color = lerp(_BaseColor.rgb, _AccentColor.rgb, combined);
 
-                // Escala de grises
-                float gray = gloss * _Brightness;
+                // Aplicar brillo general
+                color *= _Brightness;
 
-                return float4(gray, gray, gray, 1);
+                return float4(color, 1.0);
             }
             ENDCG
         }

@@ -1,15 +1,12 @@
 Shader "Unlit/K6"
 {
-    
     Properties
     {
-        _Segments ("Segments", Range(2, 20)) = 6           
-        _Rotation ("Rotation", Float) = 0                  
-        _Zoom ("Zoom", Float) = 1                          
-        _Brightness ("Brightness", Float) = 1              
-        _Glassiness ("Glassiness", Range(0, 5)) = 1        
-        _GlowStrength ("Glow Strength", Range(0, 5)) = 1   
-        _Pattern ("Pattern Type", Range(0,2)) = 0          
+        _Zoom ("Zoom", Float) = 1
+        _Speed ("Chaos Speed", Float) = 1
+        _Brightness ("Brightness", Float) = 1
+        _Distort ("Distortion", Range(0,2)) = 0.8
+        _NoiseStrength ("Noise Strength", Range(0,2)) = 1.0
     }
 
     SubShader
@@ -24,108 +21,81 @@ Shader "Unlit/K6"
             #pragma fragment frag
             #include "UnityCG.cginc"
 
-            
-            float _Segments;
-            float _Rotation;
             float _Zoom;
+            float _Speed;
             float _Brightness;
-            float _Glassiness;
-            float _GlowStrength;
-            float _Pattern;
+            float _Distort;
+            float _NoiseStrength;
 
-            // info que recibe cada vertice
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            // lo que mandamos al fragment shader
             struct v2f
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
 
-            // vertex shader es solo pasa los datos tal cual
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex); // pasa la posicion a la pantalla
-                o.uv = v.uv; // manda las coordenadas UV
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.uv;
                 return o;
-            }
+            };
 
-            // funcion para convertir de HSV a RGB
-            float3 hsv2rgb(float3 c)
+            // Función de ruido aleatorio
+            float hash21(float2 p)
             {
-                float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
+                p = frac(p * float2(123.34, 456.21));
+                p += dot(p, p + 45.32);
+                return frac(p.x * p.y);
             }
 
-            // funcion que espejea los valores
-            float mirror(float v) {
-                return abs(frac(v * 0.5) * 2.0 - 1.0);
+            // Ruido fractal simple
+            float noise(float2 p)
+            {
+                float2 i = floor(p);
+                float2 f = frac(p);
+                float a = hash21(i);
+                float b = hash21(i + float2(1.0, 0.0));
+                float c = hash21(i + float2(0.0, 1.0));
+                float d = hash21(i + float2(1.0, 1.0));
+                float2 u = f * f * (3.0 - 2.0 * f);
+                return lerp(lerp(a, b, u.x), lerp(c, d, u.x), u.y);
             }
 
-            // fragment shader aquí se genera todo el patron visual
             fixed4 frag (v2f i) : SV_Target
             {
-                float t = _Time.y; // tiempo para animar el shader
+                float t = _Time.y * _Speed;
 
-                // mueve el centro al medio y aplica zoom
+                // Centrado + zoom
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                // espejea las coordenadas para simetria
-                uv = float2(mirror(uv.x), mirror(uv.y));
+                // Distorsión como pensamientos que no paran
+                float distort = noise(uv * 2.0 + t) * _Distort;
+                uv += distort * sin(uv.yx * 3.0 + t);
 
-                float r = length(uv); // distancia desde el centro
-                float angle = atan2(uv.y, uv.x) + _Rotation; // angulo con rotacion
+                // Ruido base
+                float n = noise(uv * 3.0 + t * 0.5) * _NoiseStrength;
 
-                // ajusta el angulo para que se repita por segmentos 
-                float segmentAngle = 3.14159265 / _Segments;
-                angle = fmod(angle, 2.0 * segmentAngle);
-                angle = abs(angle - segmentAngle);
+                // Patrón fragmentado y cambiante
+                float chaos = sin(uv.x * 8.0 + n * 6.0 + t * 2.0) * 
+                              cos(uv.y * 8.0 - n * 6.0 - t * 1.5);
 
-                // reconstruye coordenadas con el angulo modificado
-                float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
+                // Bordes marcados y oscuros
+                float val = smoothstep(0.0, 0.5, chaos) - smoothstep(0.5, 1.0, chaos);
 
-                float val;
+                // Intensidad de destellos aleatorios
+                float flicker = noise(uv * 10.0 + t * 5.0) * 0.5;
 
-                // elige el patron según el valor de _Pattern
-                if (_Pattern < 0.5) {
-                    // patron tipo cuadricula animada
-                    float2 grid = sin(mirroredUV * 10 + t);
-                    val = (grid.x * grid.y) * 0.5 + 0.5;
-                }
-                else if (_Pattern < 1.5) {
-                    // patron de anillos que se mueven
-                    val = sin(r * 20 - t * 4);
-                    val = saturate(val * 0.5 + 0.5); 
-                }
-                else {
-                    // patron de anillos con picos
-                    float theta = atan2(mirroredUV.y, mirroredUV.x);
-                    float rings = sin(r * 15 - t * 2);
-                    float spikes = cos(theta * _Segments * 2);
-                    val = rings * spikes;
-                    val = saturate(val * 0.5 + 0.5);
-                }
+                // Combinación final: caos + parpadeos + ruido
+                float gray = saturate(val + flicker + n * 0.3) * _Brightness;
 
-                // agrega brillo desde el centro
-                float glow = exp(-r * _GlowStrength * 2.0);
-                val = saturate(val + glow * 0.8); 
-
-                // cambia el color dinamicamente con el tiempo y el angulo
-                float hue = frac(angle / (2.0 * segmentAngle) + t * 0.1);
-                float3 color = hsv2rgb(float3(hue, 1.0, 1.0)); 
-
-                // ajusta el brillo con glassiness y brightness
-                float gloss = pow(val, _Glassiness * 2.5 + 0.5);
-                float3 finalColor = color * gloss * _Brightness;
-
-                return float4(finalColor, 1); // color final del pixel 
+                return float4(gray, gray, gray, 1);
             }
             ENDCG
         }

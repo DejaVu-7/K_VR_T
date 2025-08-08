@@ -1,4 +1,4 @@
-Shader "Unlit/K10"
+Shader "Unlit/K8"
 {
     Properties
     {
@@ -8,11 +8,13 @@ Shader "Unlit/K10"
         _Brightness ("Brightness", Float) = 1
         _GlowStrength ("Glow Strength", Range(0, 5)) = 1
         _Speed ("Movement Speed", Float) = 1
+        _EdgeThreshold ("Edge Sharpness", Range(0.0, 1.0)) = 0.6
+        _PatternScale ("Pattern Scale", Float) = 25
     }
 
     SubShader
     {
-        Tags { "RenderType" = "Opaque" }
+        Tags { "RenderType"="Opaque" }
         LOD 100
 
         Pass
@@ -22,12 +24,18 @@ Shader "Unlit/K10"
             #pragma fragment frag
             #include "UnityCG.cginc"
 
+            #ifndef UNITY_PI
+            #define UNITY_PI 3.14159265359
+            #endif
+
             float _Segments;
             float _Rotation;
             float _Zoom;
             float _Brightness;
             float _GlowStrength;
             float _Speed;
+            float _EdgeThreshold;
+            float _PatternScale;
 
             struct appdata
             {
@@ -49,20 +57,16 @@ Shader "Unlit/K10"
                 return o;
             }
 
-            float mirror(float v) {
-                return abs(frac(v * 0.5) * 2.0 - 1.0);
-            }
-
             fixed4 frag(v2f i) : SV_Target
             {
                 float t = _Time.y * _Speed;
 
-                // Centrar y aplicar zoom
+                // Centrar y escalar
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                // Convertir a coordenadas polares
+                // Coordenadas polares
                 float r = length(uv);
-                float angle = atan2(uv.y, uv.x) + _Rotation + t * 0.2;
+                float angle = atan2(uv.y, uv.x) + _Rotation + t * 0.3;
 
                 // Simetría caleidoscópica
                 float segAngle = UNITY_PI * 2.0 / _Segments;
@@ -71,18 +75,27 @@ Shader "Unlit/K10"
 
                 float2 kaleidoUV = float2(cos(angle), sin(angle)) * r;
 
-                // Movimiento en la textura del patrón
-                kaleidoUV += sin(t + kaleidoUV.yx * 3.0) * 0.2;
+                // Movimiento ondulado orgánico y dinámico
+                kaleidoUV += float2(
+                    sin(t * 3.0 + kaleidoUV.y * 5.0) * 0.2,
+                    cos(t * 2.0 + kaleidoUV.x * 7.0) * 0.2
+                );
 
-                // Patrón dinámico: ondas radiales en cuadrícula
-                float pattern = sin(kaleidoUV.x * 10.0 + t) * sin(kaleidoUV.y * 10.0 + t);
-                float val = saturate(pattern * 0.5 + 0.5);
+                // Patrón combinado: mezcla ondas senoidales y modulación orgánica
+                float pattern = sin(kaleidoUV.x * _PatternScale + t * 2.0) 
+                              * cos(kaleidoUV.y * _PatternScale * 1.3 - t * 1.5)
+                              * sin(length(kaleidoUV) * _PatternScale * 0.8 - t);
 
-                // Glow desde el centro
-                float glow = exp(-r * _GlowStrength);
-                val += glow;
+                pattern = abs(pattern);
 
-                // Escala de grises (mismo valor en R, G, B)
+                // Bordes nítidos con smoothstep
+                float val = smoothstep(_EdgeThreshold, 1.0, pattern);
+
+                // Glow desde el centro, controlado
+                float glow = exp(-r * _GlowStrength * 1.5) * 0.7;
+                val = saturate(val + glow);
+
+                // Escala de grises
                 float gray = val * _Brightness;
 
                 return float4(gray, gray, gray, 1.0);

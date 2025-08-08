@@ -2,34 +2,27 @@ Shader "Unlit/K7"
 {
     Properties
     {
-        _Segments ("Segments", Range(2, 20)) = 6           
-        _Rotation ("Rotation", Float) = 0                  
-        _Zoom ("Zoom", Float) = 1                          
-        _Brightness ("Brightness", Float) = 1              
-        _Glassiness ("Glassiness", Range(0, 5)) = 1        
-        _GlowStrength ("Glow Strength", Range(0, 5)) = 1   
-        _Pattern ("Pattern Type", Range(0,2)) = 0          
+        _Segments ("Symmetry Segments", Range(2, 20)) = 8
+        _Rotation ("Rotation", Float) = 0
+        _Zoom ("Zoom", Float) = 1
+        _MainColor ("Base Color", Color) = (0.6, 0.8, 1, 1)
+        _ChaosColor ("Chaos Color", Color) = (1, 0.5, 0.5, 1)
+        _BlendChaos ("Chaos Blend", Range(0,1)) = 0.4
+        _CalmSpeed ("Calm Rotation Speed", Float) = 0.2
+        _ChaosSpeed ("Chaos Distort Speed", Float) = 2
+        _DistortStrength ("Chaos Distort Strength", Range(0,1)) = 0.15
+        _Brightness ("Brightness", Float) = 1
     }
 
     SubShader
     {
         Tags { "RenderType"="Opaque" }
-        LOD 100
-
         Pass
         {
-            CGPROGRAM
+            HLSLPROGRAM
             #pragma vertex vert
             #pragma fragment frag
             #include "UnityCG.cginc"
-
-            float _Segments;
-            float _Rotation;
-            float _Zoom;
-            float _Brightness;
-            float _Glassiness;
-            float _GlowStrength;
-            float _Pattern;
 
             struct appdata
             {
@@ -43,72 +36,60 @@ Shader "Unlit/K7"
                 float4 vertex : SV_POSITION;
             };
 
+            float _Segments;
+            float _Rotation;
+            float _Zoom;
+            float4 _MainColor;
+            float4 _ChaosColor;
+            float _BlendChaos;
+            float _CalmSpeed;
+            float _ChaosSpeed;
+            float _DistortStrength;
+            float _Brightness;
+            float _TimeParameters;
+
             v2f vert (appdata v)
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+                o.uv = v.uv * 2.0 - 1.0; // UV centradas
                 return o;
-            }
-
-            float3 hsv2rgb(float3 c)
-            {
-                float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
-            }
-
-            float mirror(float v) {
-                return abs(frac(v * 0.5) * 2.0 - 1.0);
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float t = _Time.y;
+                float time = _Time.y;
 
-                float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
-                uv = float2(mirror(uv.x), mirror(uv.y));
+                // Rotación calmada global
+                float calmAngle = _Rotation + time * _CalmSpeed;
 
+                // Transformar coordenadas a radiales
+                float2 uv = i.uv * _Zoom;
                 float r = length(uv);
-                float angle = atan2(uv.y, uv.x) + _Rotation;
+                float theta = atan2(uv.y, uv.x) + calmAngle;
 
-                float segmentAngle = 3.14159265 / _Segments;
-                angle = fmod(angle, 2.0 * segmentAngle);
-                angle = abs(angle - segmentAngle);
+                // Simetría kaleidoscópica
+                float segmentAngle = UNITY_TWO_PI / _Segments;
+                theta = fmod(theta, segmentAngle);
+                theta = abs(theta - segmentAngle * 0.5);
 
-                float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
+                // Convertir de nuevo a cartesianas
+                float2 kaleido = float2(cos(theta), sin(theta)) * r;
 
-                float val;
-                if (_Pattern < 0.5) {
-                    float2 grid = sin(mirroredUV * 10 + t);
-                    val = (grid.x * grid.y) * 0.5 + 0.5;
-                }
-                else if (_Pattern < 1.5) {
-                    val = sin(r * 20 - t * 4);
-                    val = saturate(val * 0.5 + 0.5); 
-                }
-                else {
-                    float theta = atan2(mirroredUV.y, mirroredUV.x);
-                    float rings = sin(r * 15 - t * 2);
-                    float spikes = cos(theta * _Segments * 2);
-                    val = rings * spikes;
-                    val = saturate(val * 0.5 + 0.5);
-                }
+                // Distorsión caótica suave
+                float chaos = sin(kaleido.x * 8 + time * _ChaosSpeed) * cos(kaleido.y * 8 - time * _ChaosSpeed);
+                kaleido += _DistortStrength * chaos;
 
-                float glow = exp(-r * _GlowStrength * 2.0);
-                val = saturate(val + glow * 0.8); 
+                // Colores: armonía + caos
+                float calmPattern = smoothstep(0.2, 1.0, sin(r * 6 - time) * 0.5 + 0.5);
+                float chaosPattern = smoothstep(0.2, 1.0, sin(r * 12 + chaos * 3.0) * 0.5 + 0.5);
 
-                float hue = frac(angle / (2.0 * segmentAngle) + t * 0.1);
-                float3 color = hsv2rgb(float3(hue, 1.0, 1.0));
+                float blend = lerp(calmPattern, chaosPattern, _BlendChaos);
+                float4 color = lerp(_MainColor, _ChaosColor, blend);
 
-                float gloss = pow(val, _Glassiness * 2.5 + 0.5);
-                float3 finalColor = color * gloss * _Brightness;
-
-                // Convertir a escala de grises usando luminancia
-                float gray = dot(finalColor, float3(0.299, 0.587, 0.114));
-                return float4(gray, gray, gray, 1);
+                return color * _Brightness;
             }
-            ENDCG
+            ENDHLSL
         }
     }
 }

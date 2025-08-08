@@ -1,19 +1,20 @@
 Shader "Unlit/K5"
 {
-  
     Properties
     {
-        _Segments ("Segments", Range(2, 20)) = 8       
-        _Rotation ("Rotation", Float) = 0              
-        _Zoom ("Zoom", Float) = 1                      
-        _Brightness ("Brightness", Float) = 1          
-        _Glassiness ("Glassiness", Range(0, 5)) = 1    
-        _Pattern ("Pattern Type", Range(0,2)) = 0      
+        _Segments ("Symmetry Segments", Range(2, 20)) = 6
+        _Rotation ("Rotation", Float) = 0
+        _Zoom ("Zoom", Float) = 1
+        _Brightness ("Brightness", Float) = 1
+        _GlowStrength ("Glow Strength", Range(0, 5)) = 1
+        _Speed ("Movement Speed", Float) = 1
+        _EdgeThreshold ("Edge Sharpness", Range(0.0, 1.0)) = 0.5
+        _PatternScale ("Pattern Scale", Float) = 20
     }
 
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+        Tags { "RenderType" = "Opaque" }
         LOD 100
 
         Pass
@@ -23,101 +24,74 @@ Shader "Unlit/K5"
             #pragma fragment frag
             #include "UnityCG.cginc"
 
-          
+            #ifndef UNITY_PI
+            #define UNITY_PI 3.14159265359
+            #endif
+
             float _Segments;
             float _Rotation;
             float _Zoom;
             float _Brightness;
-            float _Glassiness;
-            float _Pattern;
+            float _GlowStrength;
+            float _Speed;
+            float _EdgeThreshold;
+            float _PatternScale;
 
-            // datos de entrada del mesh
             struct appdata
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
             };
 
-            // lo que mandamos al fragment shader
             struct v2f
             {
                 float2 uv : TEXCOORD0;
                 float4 vertex : SV_POSITION;
             };
 
-            // vertex shader solo pasa los datos sin cambios
-            v2f vert (appdata v)
+            v2f vert(appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex); // convierte a coords de pantalla
-                o.uv = v.uv; // manda coords uv normales
+                o.vertex = UnityObjectToClipPos(v.vertex);
+                o.uv = v.uv;
                 return o;
             }
 
-            // convierte de hsv a rgb para hacer colores arcoiris
-            float3 hsv2rgb(float3 c)
+            fixed4 frag(v2f i) : SV_Target
             {
-                float4 K = float4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
-                float3 p = abs(frac(c.xxx + K.xyz) * 6.0 - K.www);
-                return c.z * lerp(K.xxx, saturate(p - K.xxx), c.y);
-            }
+                float t = _Time.y * _Speed;
 
-            // fragment shader aqui se dibuja el efecto visual
-            fixed4 frag (v2f i) : SV_Target
-            {
-                float t = _Time.y; // tiempo para animar
-
-                // centra la uv y aplica zoom
+                // Centrar y aplicar zoom
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                float r = length(uv); // distancia al centro
-                float angle = atan2(uv.y, uv.x) + _Rotation; // angulo + rotacion
+                // Coordenadas polares
+                float r = length(uv);
+                float angle = atan2(uv.y, uv.x) + _Rotation + t * 0.2;
 
-                // divide el circulo en segmentos simetricos
-                float segmentAngle = 3.14159265 / _Segments;
-                angle = fmod(angle, 2.0 * segmentAngle);
-                angle = abs(angle - segmentAngle);
+                // Simetría caleidoscópica
+                float segAngle = (UNITY_PI * 2.0) / _Segments;
+                angle = fmod(angle, segAngle);
+                angle = abs(angle - segAngle * 0.5);
 
-                // reconstruye coordenadas reflejadas para el patron
-                float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
+                float2 kaleidoUV = float2(cos(angle), sin(angle)) * r;
 
-                float val;
+                // Movimiento más rápido y definido
+                kaleidoUV += sin(t + kaleidoUV.yx * 4.0) * 0.15;
 
-                // segun el tipo de patron cambia el efecto
-                if (_Pattern < 0.5) {
-                    // cuadricula ondulante
-                    float2 grid = sin(mirroredUV * 12 + t);
-                    val = (grid.x * grid.y) * 0.5 + 0.5;
-                }
-                else if (_Pattern < 1.5) {
-                    // anillos que se mueven
-                    val = sin(r * 20 - t * 4);
-                    val = saturate(val * 0.5 + 0.5);
-                }
-                else {
-                    // anillos con picos
-                    float theta = atan2(mirroredUV.y, mirroredUV.x);
-                    float rings = sin(r * 15 - t * 2);
-                    float spikes = cos(theta * _Segments * 2);
-                    val = rings * spikes;
-                    val = saturate(val * 0.5 + 0.5);
-                }
+                // Patrón más denso
+                float pattern = sin(kaleidoUV.x * _PatternScale + t) * sin(kaleidoUV.y * _PatternScale + t);
 
-                // brillo suave desde el centro
-                float glow = exp(-r * 2.5);
-                val = saturate(val + glow * 0.8);
+                // Forzar contraste para bordes nítidos
+                float val = smoothstep(_EdgeThreshold, 1.0, abs(pattern));
 
-                // color arcoiris animado segun angulo y tiempo
-                float hue = frac(angle / (2.0 * segmentAngle) + t * 0.1);
-                float3 color = hsv2rgb(float3(hue, 1.0, 1.0));
+                // Glow desde el centro, controlado
+                float glow = exp(-r * _GlowStrength) * 0.5;
+                val = saturate(val + glow);
 
-                // controla que tan brillante se ve como vidrio
-                float gloss = pow(val, _Glassiness * 2.5 + 0.5);
+                // Escala de grises
+                float gray = val * _Brightness;
 
-                // resultado final con color brillo y luz
-                float3 finalColor = color * gloss * _Brightness;
-
-                return float4(finalColor, 1);
+                return float4(gray, gray, gray, 1.0);
             }
             ENDCG
         }

@@ -52,7 +52,7 @@ Shader "Unlit/K7"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv * 2.0 - 1.0; // UV centradas
+                o.uv = v.uv * 2.0 - 1.0; 
                 return o;
             }
 
@@ -60,27 +60,26 @@ Shader "Unlit/K7"
             {
                 float time = _Time.y;
 
-                // Rotación calmada global
+             
                 float calmAngle = _Rotation + time * _CalmSpeed;
 
-                // Transformar coordenadas a radiales
                 float2 uv = i.uv * _Zoom;
                 float r = length(uv);
                 float theta = atan2(uv.y, uv.x) + calmAngle;
 
-                // Simetría kaleidoscópica
+                
                 float segmentAngle = UNITY_TWO_PI / _Segments;
                 theta = fmod(theta, segmentAngle);
                 theta = abs(theta - segmentAngle * 0.5);
 
-                // Convertir de nuevo a cartesianas
+                
                 float2 kaleido = float2(cos(theta), sin(theta)) * r;
 
-                // Distorsión caótica suave
+                
                 float chaos = sin(kaleido.x * 8 + time * _ChaosSpeed) * cos(kaleido.y * 8 - time * _ChaosSpeed);
                 kaleido += _DistortStrength * chaos;
 
-                // Colores: armonía + caos
+                
                 float calmPattern = smoothstep(0.2, 1.0, sin(r * 6 - time) * 0.5 + 0.5);
                 float chaosPattern = smoothstep(0.2, 1.0, sin(r * 12 + chaos * 3.0) * 0.5 + 0.5);
 

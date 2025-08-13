@@ -47,7 +47,7 @@ Shader "Unlit/K6"
                 return o;
             };
 
-            // Función de ruido aleatorio
+            
             float hash21(float2 p)
             {
                 p = frac(p * float2(123.34, 456.21));
@@ -55,7 +55,7 @@ Shader "Unlit/K6"
                 return frac(p.x * p.y);
             }
 
-            // Ruido fractal simple
+            
             float noise(float2 p)
             {
                 float2 i = floor(p);
@@ -72,27 +72,26 @@ Shader "Unlit/K6"
             {
                 float t = _Time.y * _Speed;
 
-                // Centrado + zoom
+                
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                // Distorsión como pensamientos que no paran
+                
                 float distort = noise(uv * 2.0 + t) * _Distort;
                 uv += distort * sin(uv.yx * 3.0 + t);
 
-                // Ruido base
+               
                 float n = noise(uv * 3.0 + t * 0.5) * _NoiseStrength;
 
-                // Patrón fragmentado y cambiante
+               
                 float chaos = sin(uv.x * 8.0 + n * 6.0 + t * 2.0) * 
                               cos(uv.y * 8.0 - n * 6.0 - t * 1.5);
 
-                // Bordes marcados y oscuros
+                
                 float val = smoothstep(0.0, 0.5, chaos) - smoothstep(0.5, 1.0, chaos);
 
-                // Intensidad de destellos aleatorios
                 float flicker = noise(uv * 10.0 + t * 5.0) * 0.5;
 
-                // Combinación final: caos + parpadeos + ruido
+                
                 float gray = saturate(val + flicker + n * 0.3) * _Brightness;
 
                 return float4(gray, gray, gray, 1);

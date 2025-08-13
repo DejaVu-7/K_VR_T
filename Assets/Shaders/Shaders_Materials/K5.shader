@@ -61,34 +61,33 @@ Shader "Unlit/K5"
             {
                 float t = _Time.y * _Speed;
 
-                // Centrar y aplicar zoom
+               
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                // Coordenadas polares
+                
                 float r = length(uv);
                 float angle = atan2(uv.y, uv.x) + _Rotation + t * 0.2;
 
-                // Simetría caleidoscópica
+                
                 float segAngle = (UNITY_PI * 2.0) / _Segments;
                 angle = fmod(angle, segAngle);
                 angle = abs(angle - segAngle * 0.5);
 
                 float2 kaleidoUV = float2(cos(angle), sin(angle)) * r;
 
-                // Movimiento más rápido y definido
+               
                 kaleidoUV += sin(t + kaleidoUV.yx * 4.0) * 0.15;
 
-                // Patrón más denso
+              
                 float pattern = sin(kaleidoUV.x * _PatternScale + t) * sin(kaleidoUV.y * _PatternScale + t);
 
-                // Forzar contraste para bordes nítidos
+                
                 float val = smoothstep(_EdgeThreshold, 1.0, abs(pattern));
 
-                // Glow desde el centro, controlado
                 float glow = exp(-r * _GlowStrength) * 0.5;
                 val = saturate(val + glow);
 
-                // Escala de grises
+                
                 float gray = val * _Brightness;
 
                 return float4(gray, gray, gray, 1.0);

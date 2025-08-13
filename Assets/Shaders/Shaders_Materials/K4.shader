@@ -59,7 +59,7 @@
             {
                 float t = _Time.y;
 
-                // UV transformaciones
+                
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
                 uv = float2(mirror(uv.x), mirror(uv.y));
 
@@ -72,22 +72,22 @@
 
                 float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
 
-                // Movimiento animado en diagonal
+                
                 float2 animatedUV = mirroredUV + t * _Speed * float2(0.3, 0.7);
 
-                // Patrón de cubos (tipo checker)
+                
                 float2 blockCoord = floor(animatedUV * 8.0);
                 float checker = fmod(blockCoord.x + blockCoord.y, 2.0);
                 float val = checker;
 
-                // Glow desde el centro
+                
                 float glow = exp(-r * _GlowStrength * 2.0);
                 val = saturate(val + glow * 0.8);
 
-                // Glassiness
+                
                 float gloss = pow(val, _Glassiness * 2.5 + 0.5);
 
-                // Escala de grises
+               
                 float gray = gloss * _Brightness;
 
                 return float4(gray, gray, gray, 1);

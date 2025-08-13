@@ -104,7 +104,7 @@ Shader "Unlit/K3"
                 float gloss = pow(val, _Glassiness * 2.5 + 0.5);
                 float3 finalColor = color * gloss * _Brightness;
 
-                // Convertir a escala de grises usando luminancia
+                
                 float gray = dot(finalColor, float3(0.299, 0.587, 0.114));
                 return float4(gray, gray, gray, 1);
             }

@@ -51,7 +51,7 @@ Shader "Unlit/KaleidoscopeTunnel"
             {
                 v2f o;
                 o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv * 2.0 - 1.0; // centrar
+                o.uv = v.uv * 2.0 - 1.0; 
                 return o;
             }
 
@@ -59,25 +59,25 @@ Shader "Unlit/KaleidoscopeTunnel"
             {
                 float2 uv = i.uv;
 
-                // Convertir a coordenadas polares
+                
                 float r = length(uv);
                 float a = atan2(uv.y, uv.x);
 
-                // Crear simetría tipo caleidoscopio
+                
                 a = fmod(a, 2.0 * UNITY_PI / _Segments);
                 a = abs(a - (UNITY_PI / _Segments));
 
-                // Movimiento del túnel
+                
                 r = r * _Zoom + _Time.y * _Speed;
                 
-                // Distorsión para dar profundidad
+                
                 r += sin(r * 3.0 + _Time.y) * _Distort * 0.1;
 
-                // Patrón de colores
+                
                 float pattern = sin(r * 10.0) * 0.5 + 0.5;
                 fixed4 col = lerp(_Color1, _Color2, pattern);
 
-                // Brillo y resplandor
+                
                 float glow = pow(1.0 - abs(sin(r * 2.0)), _GlowStrength);
                 col.rgb *= _Brightness + glow;
 

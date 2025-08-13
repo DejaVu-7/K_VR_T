@@ -60,26 +60,26 @@ Shader "Unlit/K2_Gray"
             {
                 float t = _Time.y;
 
-                // Centrar y aplicar zoom
+                
                 float2 uv = (i.uv - 0.5) * 2.0 * _Zoom;
 
-                // Simetría espejo
+             
                 uv = float2(mirror(uv.x), mirror(uv.y));
 
                 float r = length(uv);
                 float angle = atan2(uv.y, uv.x) + _Rotation;
 
-                // Segmentar
+                
                 float segmentAngle = 3.14159265 / _Segments;
                 angle = fmod(angle, 2.0 * segmentAngle);
                 angle = abs(angle - segmentAngle);
 
-                // UV modificado
+                
                 float2 mirroredUV = float2(cos(angle), sin(angle)) * r;
 
                 float val;
 
-                // Patrón seleccionado
+                
                 if (_Pattern < 0.5) {
                     float2 grid = sin(mirroredUV * 10 + t);
                     val = (grid.x * grid.y) * 0.5 + 0.5;
@@ -96,11 +96,10 @@ Shader "Unlit/K2_Gray"
                     val = saturate(val * 0.5 + 0.5);
                 }
 
-                // Glow
                 float glow = exp(-r * _GlowStrength * 2.0);
                 val = saturate(val + glow * 0.8);
 
-                // Aplicar glassiness y brillo
+              
                 float gloss = pow(val, _Glassiness * 2.5 + 0.5);
                 float gray = gloss * _Brightness;
 
